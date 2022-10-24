@@ -1,5 +1,20 @@
 export interface PromiseCacheOptions {
+  /**
+   * If `lazy` is `true`, no cache is created unless you call `this.get`.
+   * Otherwise, the cache is pre-built.
+   * @default false
+   */
   lazy: boolean;
+  /**
+   * Maximum number of retries.
+   * @default Number.POSITIVE_INFINITY
+   */
+  maxRetries: number;
+  /**
+   * Minimum number of milliseconds between calls of `promiseGenerator`.
+   * @default 0
+   */
+  minRetryInterval: number;
 }
 
 export interface PromiseCacheProps<T> {
@@ -10,17 +25,22 @@ export interface PromiseCacheProps<T> {
 export class PromiseCache<T> {
   private readonly promiseGenerator: () => Promise<T>;
   private readonly options: PromiseCacheOptions;
-  private p: Promise<T> | null = null;
+  private cache: Promise<T> | null = null;
+  private promiseCreatedAt: Date | null = null;
+  private numRetries = 0;
 
   constructor({promiseGenerator, options = {}}: PromiseCacheProps<T>) {
     const defaultOptions: PromiseCacheOptions = {
       lazy: false,
+      maxRetries: Number.POSITIVE_INFINITY,
+      minRetryInterval: 0,
     };
     this.promiseGenerator = promiseGenerator;
     this.options = {
       ...defaultOptions,
       ...options,
     };
+    if (!this.options.lazy) this.get();
   }
 
   /**
@@ -30,18 +50,37 @@ export class PromiseCache<T> {
    * @returns Promise
    */
   get(): Promise<T> {
-    // Return a cached promise if exists.
-    if (this.p) return this.p;
-    // Create new promise.
-    const p = this.promiseGenerator();
-    p.catch(() => {
-      // Clean cache if an error occurs.
-      this.p = null;
-      // Request new promise if options.lazy is false.
-      if (!this.options.lazy) this.get();
-    });
-    // Update cache.
-    this.p = p;
-    return p;
+    if (this.cache) return this.cache;
+
+    const cache = this.createNextCache();
+
+    cache.catch(() => this.retry());
+
+    this.cache = cache;
+    return cache;
+  }
+
+  private createNextCache(): Promise<T> {
+    const waitFor =
+      (this.promiseCreatedAt?.valueOf() ?? 0) +
+      this.options.minRetryInterval -
+      Date.now();
+    if (waitFor <= 0) {
+      this.promiseCreatedAt = new Date();
+      return this.promiseGenerator();
+    }
+    return new Promise<T>((resolve, reject) =>
+      setTimeout(() => {
+        this.promiseCreatedAt = new Date();
+        this.promiseGenerator().then(resolve).catch(reject);
+      }, waitFor)
+    );
+  }
+
+  private retry() {
+    this.numRetries += 1;
+    if (this.numRetries > this.options.maxRetries) return;
+    this.cache = null;
+    if (!this.options.lazy) this.get();
   }
 }
