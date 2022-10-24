@@ -24,7 +24,7 @@ describe('PromiseCache ', () => {
   });
 
   // This causes an infinite loop.
-  // test('rejects immediately (lazy=true)')
+  // test('rejects immediately (lazy=false)')
 
   test('rejects immediately (lazy=true)', async () => {
     const cache = new PromiseCache({
