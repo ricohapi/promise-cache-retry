@@ -16,6 +16,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
       with:
+        ref: main
         token: ${{ secrets.GITHUB_TOKEN }}
     - name: Configure git
       run: |
@@ -24,4 +25,4 @@ jobs:
     - name: Bump a package version
       run: npm version ${{ github.event.inputs.version }}
     - name: Push
-      run: git push origin --tags
+      run: git push origin main --tags
