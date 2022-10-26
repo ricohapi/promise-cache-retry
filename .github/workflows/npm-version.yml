@@ -1,0 +1,27 @@
+name: npm version
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'New version'
+        default: 'minor'
+        required: true
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Configure git
+      run: |
+        git config --global user.email "bot@ricoh360.com"
+        git config --global user.name "bot"
+    - name: Bump a package version
+      run: npm version ${{ github.event.inputs.version }}
+    - name: Push
+      run: git push origin --tags
