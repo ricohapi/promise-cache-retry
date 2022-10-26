@@ -7,51 +7,51 @@
 [![TypeScript Style Guide][gts-image]][gts-url]
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg)](https://github.com/RichardLitt/standard-readme)
 
-This is an example file with maximal choices selected.
-
-This is a long description.
-
 ## Table of Contents
 
 - [Security](#security)
 - [Background](#background)
 - [Install](#install)
 - [Usage](#usage)
-- [API](#api)
 - [Contributing](#contributing)
 - [License](#license)
 
 ## Security
 
-### Any optional sections
-
 ## Background
 
-### Any optional sections
+If you simply cache the Promise it will always resolve with an error after an error occurs.
+On the other hand, retrying within a Promise will leave the Promise unresolved until the error is resolved, blocking further processing.
+
+So this library works like this: If an error occurs, resolve it as an error, automatically perform retry processing (unless you disable it explicitly), and return the retry result when referencing the cache.
 
 ## Install
 
-This module depends upon a knowledge of [Markdown]().
 
 ```
+npm install --save promise-cache-retry
 ```
-
-### Any optional sections
 
 ## Usage
 
+```typescript
+import { PromiseCache } from 'promise-cache-retry';
+
+const cache = new PromiseCache({
+  promiseGenerator: async () => {
+    const res = await fetchData(ENDPOINT);
+    return res.data;
+  },
+  options: {
+    maxRetries: 2,
+    minRetryInterval: 3000,
+  },
+});
+
+export const handler = async () => {
+  const value = await cache.get();
+}
 ```
-```
-
-Note: The `license` badge image link at the top of this file should be updated with the correct `:user` and `:repo`.
-
-### Any optional sections
-
-## API
-
-### Any optional sections
-
-## More optional sections
 
 ## Contributing
 
@@ -60,8 +60,6 @@ See [the contributing file](CONTRIBUTING.md)!
 PRs accepted.
 
 Small note: If editing the Readme, please conform to the [standard-readme](https://github.com/RichardLitt/standard-readme) specification.
-
-### Any optional sections
 
 ## License
 
